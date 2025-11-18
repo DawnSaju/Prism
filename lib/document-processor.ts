@@ -36,32 +36,55 @@ export async function extractText(
         throw new Error(`Unsupported file type: ${fileType}`);
     }
   } catch (error: any) {
-    console.error(`❌ Text extraction failed for ${fileType}:`, error);
+    console.error(`Text extraction failed for ${fileType}:`, error);
     throw new Error(`Failed to extract text: ${error.message}`);
   }
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  const { PDFParse } = await import('pdf-parse');
-  const { pathToFileURL } = await import('node:url');
+  const PDFParser = (await import('pdf2json')).default;
   
-  const workerPath = join(
-    process.cwd(),
-    'node_modules',
-    'pdf-parse',
-    'dist',
-    'pdf-parse',
-    'web',
-    'pdf.worker.mjs'
-  );
-  
-  PDFParse.setWorker(pathToFileURL(workerPath).href);
-  
-  const parser = new PDFParse({ data: buffer });
-  const result = await parser.getText();
-  await parser.destroy();
-  
-  return result.text;
+  return new Promise((resolve, reject) => {
+    const pdfParser = new PDFParser();
+    
+    pdfParser.on('pdfParser_dataError', (errData: any) => {
+      reject(new Error(errData.parserError || 'PDF parsing failed'));
+    });
+    
+    pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
+      try {
+        const textContent: string[] = [];
+        
+        if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
+          for (const page of pdfData.Pages) {
+            if (page.Texts && Array.isArray(page.Texts)) {
+              const pageText = page.Texts
+                .map((text: any) => {
+                  if (text.R && Array.isArray(text.R)) {
+                    return text.R
+                      .map((r: any) => decodeURIComponent(r.T || ''))
+                      .join(' ');
+                  }
+                  return '';
+                })
+                .filter((t: string) => t.trim().length > 0)
+                .join(' ');
+              
+              if (pageText.trim()) {
+                textContent.push(pageText);
+              }
+            }
+          }
+        }
+        
+        resolve(textContent.join('\n\n'));
+      } catch (error: any) {
+        reject(new Error(`Failed to process PDF data: ${error.message}`));
+      }
+    });
+    
+    pdfParser.parseBuffer(buffer);
+  });
 }
 
 async function extractDocxText(buffer: Buffer): Promise<string> {
