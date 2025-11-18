@@ -412,7 +412,7 @@ export async function getRecommendations(
       }
     });
 
-    const SIMILARITY_THRESHOLD = 0.6;
+    const SIMILARITY_THRESHOLD = 0.5;
     
     return Array.from(documentData.values())
       .filter((item) => item.score >= SIMILARITY_THRESHOLD)
