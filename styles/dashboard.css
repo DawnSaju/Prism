@@ -1,0 +1,260 @@
+/* Dashboard-specific styles */
+/* Only applies to dashboard components */
+
+/* Document Library - Search & Filters Row */
+.dashboard-search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-search-container {
+    flex-direction: row;
+  }
+}
+
+/* Search Input Wrapper */
+.dashboard-search-wrapper {
+  flex: 1 1 0%;
+  position: relative;
+}
+
+.dashboard-search-icon-wrapper {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.dashboard-search-input {
+  width: 100%;
+  background-color: rgb(20, 20, 20);
+  border: 1px solid rgb(40, 40, 40);
+  border-radius: 10px;
+  padding-left: 3rem;
+  padding-right: 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  color: white;
+  font-size: 14px;
+  transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-search-input::placeholder {
+  color: rgb(100, 100, 100);
+}
+
+.dashboard-search-input:focus {
+  outline: none;
+  border-color: rgb(60, 60, 60);
+}
+
+/* Filter Pills Container */
+.dashboard-filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dashboard-filter-pill {
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.dashboard-filter-pill.active {
+  background-color: white;
+  color: rgb(15, 15, 15);
+  border-color: white;
+}
+
+.dashboard-filter-pill.inactive {
+  background-color: transparent;
+  color: rgb(160, 160, 160);
+  border-color: rgb(40, 40, 40);
+}
+
+.dashboard-filter-pill.inactive:hover {
+  border-color: rgb(60, 60, 60);
+  color: rgb(200, 200, 200);
+}
+
+/* View Toggle */
+.dashboard-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: rgb(20, 20, 20);
+  border: 1px solid rgb(40, 40, 40);
+  border-radius: 8px;
+  padding: 0.25rem;
+}
+
+.dashboard-view-button {
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.dashboard-view-button.active {
+  background-color: rgb(30, 30, 30);
+  color: white;
+}
+
+.dashboard-view-button.inactive {
+  color: rgb(160, 160, 160);
+}
+
+.dashboard-view-button.inactive:hover {
+  color: rgb(200, 200, 200);
+}
+
+/* Document Cards - Grid View */
+.dashboard-doc-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-doc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-doc-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.dashboard-doc-card {
+  background-color: rgb(20, 20, 20);
+  border: 1px solid rgb(40, 40, 40);
+  border-radius: 12px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-doc-card:hover {
+  border-color: rgb(80, 80, 80);
+  background-color: rgb(22, 22, 22);
+}
+
+/* Document List View */
+.dashboard-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 1rem;
+}
+
+.dashboard-doc-list-item {
+  background-color: rgb(20, 20, 20);
+  border: 1px solid rgb(40, 40, 40);
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-doc-list-item:hover {
+  border-color: rgb(80, 80, 80);
+  background-color: rgb(22, 22, 22);
+}
+
+/* Custom scrollbar styles matching dark theme */
+.dashboard-scroll-area,
+.dashboard-scroll-area * {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(60, 60, 60) rgb(20, 20, 20);
+}
+
+.dashboard-scroll-area::-webkit-scrollbar,
+.dashboard-scroll-area *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dashboard-scroll-area::-webkit-scrollbar-track,
+.dashboard-scroll-area *::-webkit-scrollbar-track {
+  background: rgb(20, 20, 20);
+  border-radius: 4px;
+}
+
+.dashboard-scroll-area::-webkit-scrollbar-thumb,
+.dashboard-scroll-area *::-webkit-scrollbar-thumb {
+  background: rgb(60, 60, 60);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.dashboard-scroll-area::-webkit-scrollbar-thumb:hover,
+.dashboard-scroll-area *::-webkit-scrollbar-thumb:hover {
+  background: rgb(80, 80, 80);
+}
+
+.dashboard-scroll-area::-webkit-scrollbar-corner,
+.dashboard-scroll-area *::-webkit-scrollbar-corner {
+  background: rgb(20, 20, 20);
+}
+
+/* Utility classes scoped to dashboard */
+.dashboard-flex {
+  display: flex;
+}
+
+.dashboard-flex-1 {
+  flex: 1 1 0%;
+}
+
+.dashboard-items-center {
+  align-items: center;
+}
+
+.dashboard-justify-between {
+  justify-content: space-between;
+}
+
+.dashboard-gap-2 {
+  gap: 0.5rem;
+}
+
+.dashboard-gap-3 {
+  gap: 0.75rem;
+}
+
+.dashboard-gap-4 {
+  gap: 1rem;
+}
+
+/* Text truncation for dashboard */
+.dashboard-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.dashboard-line-clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
