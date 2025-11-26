@@ -93,7 +93,7 @@ export default function MobileView({ currentView, onViewChange, isOpen, onClose 
               <FileText className="w-5 h-5 text-[rgb(230,230,230)]" />
             </div>
             <span className="text-white text-[18px]" style={{ fontFamily: "\"2 TT_Firs_Neue_DemiBold Unspecified\", \"2 TT_Firs_Neue_DemiBold Unspecified Placeholder\", sans-serif" }}>
-              DocuMind
+              PRISM APP
             </span>
           </button>
           <button onClick={onClose} className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[rgb(160,160,160)] hover:bg-[rgb(30,30,30)] hover:text-[rgb(200,200,200)] transition-colors">
