@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { UMAP } from "umap-js";
-import { Client, Storage } from "node-appwrite";
+import { Client, Storage, Query } from "node-appwrite";
 
 const COLLECTION_NAME = "prism_documents";
 
@@ -25,15 +25,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
+    if (!process.env.QDRANT_CLUSTER_URL || !process.env.QDRANT_API_KEY) {
       return NextResponse.json(
-        { error: "Erro in Qdrant configuration" },
+        { error: "Error in Qdrant configuration" },
         { status: 500 }
       );
     }
 
     const qdrantClient = new QdrantClient({
-      url: process.env.QDRANT_URL,
+      url: process.env.QDRANT_CLUSTER_URL,
       apiKey: process.env.QDRANT_API_KEY,
     });
 
@@ -69,7 +69,8 @@ export async function GET(request: NextRequest) {
 
     try {
       const files = await storage.listFiles(
-        process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!
+        process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
+        [Query.limit(5000)]
       );
       appwriteFiles = files.files;
       validDocumentIds = new Set(files.files.map(file => file.$id));
@@ -77,24 +78,7 @@ export async function GET(request: NextRequest) {
       console.log(`Found ${points.length} vectors in Qdrant for user ${userId}`);
       console.log(`Valid document IDs: ${validDocumentIds.size}`);
 
-      if (files.files.length > 0) {
-        console.log(
-          `Sample Appwrite IDs:`,
-          files.files.slice(0, 3).map(f => f.$id)
-        );
-      }
-      if (points.length > 0) {
-        console.log(
-          `Sample Qdrant doc IDs:`,
-          points.slice(0, 3).map(p => p.payload?.documentId)
-        );
-      }
-
-      if (files.files.length === 0) {
-        console.log(
-          `No files in Appwrite bucket - all ${points.length} vectors are unused`
-        );
-      }
+      console.log(`📊 Insights: ${files.files.length} Appwrite files, ${points.length} Qdrant vectors for user ${userId}`);
     } catch (error) {
       console.error("Error fetching Appwrite files:", error);
       return NextResponse.json(
@@ -113,9 +97,9 @@ export async function GET(request: NextRequest) {
       appwriteFiles.length === 0
         ? points
         : points.filter(point => {
-            const docId = String(point.payload?.documentId || "");
-            return validDocumentIds.has(docId);
-          });
+          const docId = String(point.payload?.documentId || "");
+          return validDocumentIds.has(docId);
+        });
 
     if (cleanup) {
       const unusedPoints = points.filter(point => {
