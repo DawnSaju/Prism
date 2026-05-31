@@ -32,14 +32,9 @@ export default function Sidebar({ currentView, onViewChange, collapsed }: Dashbo
     window.addEventListener('documentDeleted', handleDocumentChange);
     window.addEventListener('documentUploaded', handleDocumentChange);
     
-    const interval = setInterval(() => {
-      fetchDocumentStats();
-    }, 10000);
-    
     return () => {
       window.removeEventListener('documentDeleted', handleDocumentChange);
       window.removeEventListener('documentUploaded', handleDocumentChange);
-      clearInterval(interval);
     };
   }, []);
   

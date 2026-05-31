@@ -10,6 +10,7 @@ import Search from "@/components/ui/dashboard/Search";
 import Profile from "@/components/ui/dashboard/Profile";
 import Settings from "@/components/ui/dashboard/Settings";
 import Insights from "@/components/ui/dashboard/Insights";
+import GlobalUploadProgress from "@/components/ui/dashboard/GlobalUploadProgress";
 import { Bell, Settings as SettingsIcon, User, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import "@/styles/dashboard.css";
@@ -126,6 +127,8 @@ export default function DashboardPage() {
           </div>
         </main>
       </div>
+
+      <GlobalUploadProgress />
     </div>
   );
 }

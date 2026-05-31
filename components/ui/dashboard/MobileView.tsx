@@ -26,13 +26,9 @@ export default function MobileView({ currentView, onViewChange, isOpen, onClose 
     const handleDocumentChange = () => fetchDocumentStats();
     window.addEventListener("documentDeleted", handleDocumentChange);
     window.addEventListener("documentUploaded", handleDocumentChange);
-    const interval = setInterval(() => {
-      if (isOpen) fetchDocumentStats();
-    }, 10000);
     return () => {
       window.removeEventListener("documentDeleted", handleDocumentChange);
       window.removeEventListener("documentUploaded", handleDocumentChange);
-      clearInterval(interval);
     };
   }, [isOpen]);
 

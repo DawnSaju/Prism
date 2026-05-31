@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+test-jina2.js
+test-jina.js
+test-embed.js

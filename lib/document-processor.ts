@@ -1,6 +1,7 @@
 import mammoth from 'mammoth';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 
 export const CODE_EXTENSIONS = [
   'js', 'jsx', 'ts', 'tsx', 'py', 'java', 'cpp', 'c', 'h', 'hpp',
@@ -41,50 +42,30 @@ export async function extractText(
   }
 }
 
+let liteParseInitialized = false;
+
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  const PDFParser = (await import('pdf2json')).default;
+  const { default: init, LiteParse } = await import('@llamaindex/liteparse-wasm');
   
-  return new Promise((resolve, reject) => {
-    const pdfParser = new PDFParser();
+  if (!liteParseInitialized) {
+    const wasmPath = join(process.cwd(), 'node_modules', '@llamaindex', 'liteparse-wasm', 'pkg', 'liteparse_wasm_bg.wasm');
+    const wasmBuffer = readFileSync(wasmPath);
+    await init(wasmBuffer);
+    liteParseInitialized = true;
+  }
+  
+  try {
+    const parser = new LiteParse({ outputFormat: "json", ocrEnabled: false });
+    const bytes = new Uint8Array(buffer);
+    const result = await parser.parse(bytes);
     
-    pdfParser.on('pdfParser_dataError', (errData: any) => {
-      reject(new Error(errData.parserError || 'PDF parsing failed'));
-    });
-    
-    pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
-      try {
-        const textContent: string[] = [];
-        
-        if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
-          for (const page of pdfData.Pages) {
-            if (page.Texts && Array.isArray(page.Texts)) {
-              const pageText = page.Texts
-                .map((text: any) => {
-                  if (text.R && Array.isArray(text.R)) {
-                    return text.R
-                      .map((r: any) => decodeURIComponent(r.T || ''))
-                      .join(' ');
-                  }
-                  return '';
-                })
-                .filter((t: string) => t.trim().length > 0)
-                .join(' ');
-              
-              if (pageText.trim()) {
-                textContent.push(pageText);
-              }
-            }
-          }
-        }
-        
-        resolve(textContent.join('\n\n'));
-      } catch (error: any) {
-        reject(new Error(`Failed to process PDF data: ${error.message}`));
-      }
-    });
-    
-    pdfParser.parseBuffer(buffer);
-  });
+    if (result && result.text) {
+      return result.text;
+    }
+    return '';
+  } catch (error: any) {
+    throw new Error(`PDF parsing failed: ${error.message}`);
+  }
 }
 
 async function extractDocxText(buffer: Buffer): Promise<string> {
@@ -106,7 +87,7 @@ export function chunkText(
     splitByHeaders = false,
   } = options;
 
-  const cleanText = text.replace(/\s+/g, ' ').trim();
+  const cleanText = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 
   if (cleanText.length === 0) {
     return [];

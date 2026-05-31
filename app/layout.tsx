@@ -4,6 +4,7 @@ import "./globals.css";
 import { SmoothCursor } from "@/components/ui/smooth-cursor"
 import { LenisProvider } from "@/components/ui/lenis-provider"
 import { AuthProvider } from "@/contexts/AuthContext"
+import { UploadProvider } from "@/contexts/UploadContext"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,10 +43,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={`bg-[#0f0f0f] ${geistSans.variable} antialiased`}>
         <AuthProvider>
-          <LenisProvider>
-            <SmoothCursor/>
-            {children}
-          </LenisProvider>
+          <UploadProvider>
+            <LenisProvider>
+              <SmoothCursor/>
+              {children}
+            </LenisProvider>
+          </UploadProvider>
         </AuthProvider>
       </body>
     </html>

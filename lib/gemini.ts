@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
 
-const model = genAI.getGenerativeModel({ 
+const model = genAI.getGenerativeModel({
   model: 'gemini-2.5-flash',
   generationConfig: {
     temperature: 0.7,
@@ -30,7 +30,7 @@ export async function generateChatResponse(
 
     if (filteredMessages.length === 1 && filteredMessages[0].role === 'user') {
       const result = await model.generateContentStream(filteredMessages[0].parts);
-      
+
       let fullResponse = '';
       for await (const chunk of result.stream) {
         const chunkText = chunk.text();
@@ -46,7 +46,7 @@ export async function generateChatResponse(
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.parts }],
     }));
-    
+
     const currentMessage = filteredMessages[filteredMessages.length - 1].parts;
 
     const chat = model.startChat({
@@ -56,11 +56,11 @@ export async function generateChatResponse(
     const result = await chat.sendMessageStream(currentMessage);
 
     let fullResponse = '';
-    
+
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
       fullResponse += chunkText;
-      
+
       if (onChunk) {
         onChunk(chunkText);
       }
@@ -80,7 +80,7 @@ export async function generateRAGResponse(
 ): Promise<string> {
   try {
     const contextText = documentContext.join('\n\n---\n\n');
-    
+
     const prompt = `You are an AI assistant named PRISM built by Neurhack. You have access to the user's Prism document library. Answer the question based ONLY on the provided context. If the context doesn't contain enough information, say so clearly. Always be accurate and cite which document section your answer comes from.
 
 CONTEXT FROM DOCUMENTS:
@@ -93,11 +93,11 @@ ANSWER:`;
     const result = await model.generateContentStream(prompt);
 
     let fullResponse = '';
-    
+
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
       fullResponse += chunkText;
-      
+
       if (onChunk) {
         onChunk(chunkText);
       }
@@ -110,34 +110,98 @@ ANSWER:`;
   }
 }
 
-export async function generateEmbedding(text: string): Promise<number[]> {
+async function fetchWithFallback(input: string | string[]) {
+  const primaryEndpoint = process.env.ENDPOINT;
+  const primaryKey = process.env.API_KEY;
+  const primaryModel = process.env.EMBEDDING_MODEL;
+
+  const fallbackEndpoint = process.env.ENDPOINT_FALL || '';
+  const fallbackKey = process.env.API_KEY_FALL;
+  const fallbackModel = process.env.EMBEDDING_MODEL_FALL;
+
+  if (!primaryEndpoint) throw new Error("ENDPOINT is not defined in environment variables");
+
   try {
-    const embeddingModel = genAI.getGenerativeModel({
-      model: 'text-embedding-004',
+    const response = await fetch(primaryEndpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${primaryKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: primaryModel,
+        input: input,
+        dimensions: 768,
+      }),
     });
 
-    const result = await embeddingModel.embedContent(text);
-    return result.embedding.values;
+    if (!response.ok) {
+      if (response.status === 429 && fallbackKey) {
+        console.warn(`Primary embedding API rate limited (${response.status}). Falling back to proxy...`);
+        throw new Error('RATE_LIMIT');
+      }
+      const errorData = await response.text();
+      throw new Error(`Embedding API error: ${response.status} ${response.statusText} - ${errorData}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    if (error.message === 'RATE_LIMIT' || error.message.includes('RATE_TOKEN_LIMIT_EXCEEDED') || error.message.includes('429')) {
+      if (!fallbackKey) {
+        throw new Error('Rate limit exceeded and no fallback API_KEY provided.');
+      }
+
+      console.log('Using fallback embedding provider...');
+      const fallbackResponse = await fetch(fallbackEndpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${fallbackKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: fallbackModel,
+          input: input,
+          dimensions: 768,
+        }),
+      });
+
+      if (!fallbackResponse.ok) {
+        const fallbackErrorData = await fallbackResponse.text();
+        throw new Error(`Fallback API error: ${fallbackResponse.status} ${fallbackResponse.statusText} - ${fallbackErrorData}`);
+      }
+      return await fallbackResponse.json();
+    }
+    throw error;
+  }
+}
+
+export async function generateEmbedding(text: string): Promise<number[]> {
+  try {
+    const data = await fetchWithFallback(text);
+    return data.data[0].embedding;
   } catch (error: any) {
     console.error('Gemini Embedding Error:', error);
     throw new Error(error.message || 'Failed to generate embedding');
   }
 }
 
-export async function batchGenerateEmbeddings(texts: string[]): Promise<number[][]> {
+export async function batchGenerateEmbeddings(
+  texts: string[],
+  onProgress?: (progress: number, total: number) => void
+): Promise<number[][]> {
   try {
-    const embeddingModel = genAI.getGenerativeModel({
-      model: 'text-embedding-004',
-    });
-
     const batchSize = 100;
     const results: number[][] = [];
 
     for (let i = 0; i < texts.length; i += batchSize) {
       const batch = texts.slice(i, i + batchSize);
-      const batchPromises = batch.map((text) => embeddingModel.embedContent(text));
-      const batchResults = await Promise.all(batchPromises);
-      results.push(...batchResults.map((r) => r.embedding.values));
+      const data = await fetchWithFallback(batch);
+      const batchEmbeddings = data.data.map((item: any) => item.embedding);
+      results.push(...batchEmbeddings);
+
+      if (onProgress) {
+        onProgress(Math.min(i + batchSize, texts.length), texts.length);
+      }
     }
 
     return results;
@@ -153,7 +217,7 @@ export async function generateImageDescription(
   maxRetries: number = 3
 ): Promise<string> {
   let lastError: any;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const visionModel = genAI.getGenerativeModel({
@@ -184,24 +248,24 @@ Provide a clear, searchable description that would help someone find this image 
 
       const response = await result.response;
       return response.text();
-      
+
     } catch (error: any) {
       lastError = error;
-      
+
       const isRetryable = error.status === 503 || error.status === 429;
-      
+
       if (isRetryable && attempt < maxRetries) {
         const delayMs = Math.pow(2, attempt) * 1000;
-        console.warn(`⚠️  Gemini Vision overloaded (attempt ${attempt}/${maxRetries}), retrying in ${delayMs/1000}s...`);
+        console.warn(`⚠️  Gemini Vision overloaded (attempt ${attempt}/${maxRetries}), retrying in ${delayMs / 1000}s...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
         continue;
       }
-      
+
       console.error('Gemini Vision Error:', error);
       throw new Error(error.message || 'Failed to generate image description');
     }
   }
-  
+
   throw lastError;
 }
 
@@ -224,9 +288,9 @@ ${userMessages}`;
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let title = response.text().trim();
-    
+
     title = title.replace(/['"]/g, '').slice(0, 50);
-    
+
     return title || 'New Chat';
   } catch (error: any) {
     console.error('Error generating chat title:', error);
